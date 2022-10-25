@@ -1,3 +1,5 @@
 print("no")
+
+
 def printing():
-    print("lmaooooooo")
+    print("lmaooooo")
