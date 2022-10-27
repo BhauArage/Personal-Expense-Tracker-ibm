@@ -1,4 +1,4 @@
-from flask import *
+from flask import Flask, render_template, request, redirect, url_for, session
 import ibm_db
 import re
 
@@ -21,6 +21,7 @@ conn = ibm_db.connect(
 @app.route("/")
 @app.route("/home")
 def home():
+    print("hi")
     return render_template("home.html", title="Home", msg=" ")
 
 
@@ -46,10 +47,11 @@ def logout():
 def login():
     global userid
     msg = " "
-
+    print("heyoo")
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+        print("heyoo")
         sql = "SELECT * FROM clients WHERE username =? AND password =?"
         stmt = ibm_db.prepare(conn, sql)
         ibm_db.bind_param(stmt, 1, username)
