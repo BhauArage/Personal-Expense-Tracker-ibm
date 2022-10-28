@@ -28,15 +28,14 @@
         </div>
     </div>
 </section>
-{#<h1>Dashboard</h1>
+<h1>Dashboard</h1>
 {% if session.username %}
 Welcome {{ session.username }}
 Name : {{ account['USERNAME'] }}<br>
 Email : {{ account['EMAIL'] }}<br>
-Roll No. : {{ account['rollno.'] }}<br>
 <a href="/logout">logout</a>.
 {% else %}
 You are not logged in.
 <a href="/login">login</a>.
-{% endif %}#}
+{% endif %}
 {% endblock content %}

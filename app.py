@@ -18,11 +18,31 @@ conn = ibm_db.connect(
 )
 
 
-@app.route("/")
+@app.route("/", methods=["POST", "GET"])
 @app.route("/home")
 def home():
-    print("hi")
-    return render_template("home.html", title="Home", msg=" ")
+    return render_template("home.html", title="Home", msg=" hiṇ ")
+
+
+##this works
+@app.route("/sample", methods=["POST", "GET"])
+def sample():
+    if request.method == "POST":
+        amount = request.form["amount"]
+        sql = "INSERT INTO BUDGETS(id,maxbudget) VALUES(?,?)"
+        stmt = ibm_db.prepare(conn, sql)
+        ibm_db.bind_param(stmt, 1, 100)
+        ibm_db.bind_param(stmt, 2, amount)
+        ibm_db.execute(stmt)
+        return redirect(request.referrer)
+    sql = "SELECT * FROM budgets WHERE id =100"
+    stmt = ibm_db.prepare(conn, sql)
+    ibm_db.execute(stmt)
+    account = ibm_db.fetch_assoc(stmt)
+
+    return render_template(
+        "sample.html", title="Sample", account=account, messa="<h1>BHAVIKA</h1>"
+    )
 
 
 @app.route("/dashboard")
@@ -104,4 +124,5 @@ def register():
 
 
 if __name__ == "__main__":
+    app.debug = True
     app.run()

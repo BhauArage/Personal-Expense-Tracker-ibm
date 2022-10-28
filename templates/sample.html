@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+{{messa|safe}}
+{{account}}
+<form method="post" action="{{url_for('sample')}}">
+    <input type="number" name="amount" value="{{request.form['amount']}}">
+    <button type=" submit" value="{{ request.form['act']}}">submit</button>
+</form>
+{{i}}
+{% endblock content %}
