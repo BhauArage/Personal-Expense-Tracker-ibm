@@ -1,41 +1,65 @@
 {% extends "layout.html" %}
 {% block content %}
+<script type="text/javascript">
+    var flagPass = true;
+    var flagBud = true;
+    function passwordChecked() {
+        let el = document.getElementById("passDiv");
+        el.style.display = flagPass ? "none" : "block";
+        flagPass = !flagPass;
+    }
+
+    function budgetChecked() {
+        let el = document.getElementById("budDiv");
+        el.style.display = flagBud ? "none" : "block";
+        flagBud = !flagBud;
+    }
+</script>
 <section class="vh-100" style="background-color: #eee;">
     <div class="container h-100">
         <div class="card text-black" style="border-radius: 25px;">
             <div class="card-body p-md-5">
-                <div class="row d-flex justify-content-center align-items-center h-100">
+                <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">DashBoard</p>
+                {% if session.username %}
 
-                    <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">DashBoard</p>
+                <p class="text-center h3 fw-bold mb-5 mx-1 mx-md-4 mt-4">Welcome {{ session.username }}</p><br>
 
-                    {% if session.username %}
-                    {#<div class="divider d-flex align-items-center my-4">#}
-                        <p class="text-center h3 fw-bold mb-5 mx-1 mx-md-4 mt-4">Welcome {{ session.username }}</p><br>
-                        {#
-                        <h3>Welcome {{ session.username }}</h3><br>
-                        #}
-                        Name : {{ account['USERNAME'] }}<br>
-                        Email : {{ account['EMAIL'] }}<br>
-                        <p class="small fw-bold mt-2 pt-1 mb-0"><a href="/logout" style="color: black">Log out</a></p>
-                        {% else %}
-                        You are not logged in.
-                        <a href="/login">login</a>.
-                        {% endif %}
-                        {#
-                    </div>#}
+                Name : {{ session['username'] }}<br>
+                Email : {{ session['email'] }}<br>
+
+                <button type="button" onclick="passwordChecked()">Change Password</button>
+                <button type="button" onclick="budgetChecked()">Change Budget</button>
+                <br>
+                <div id="passDiv" style="display:none;">
+                    <form method="post" id="passwordChangeForm" action="/changePassword/">
+                        <label for="pass1">Enter new password</label>
+                        <input name="pass1" type="password" value="{{request.form['pass1']}}"
+                            placeholder="Password"><br>
+                        <label for="pass2">Re-enter new password</label>
+                        <input name="pass2" type="password" value="{{request.form['pass2']}}"
+                            placeholder="Re-enter Password"><br>
+                        <input type="submit">
+                        <br>
+                    </form>
                 </div>
+                <br>
+                <div id="budDiv" style="display:none;">
+                    <form method="post" id="budgetChangeForm" action="/changeBudget/">
+                        <label for="budgetAmount">Enter new Budget</label>
+                        <input name="budgetAmount" type="number" value="{{request.form['budgetAmount']}}"
+                            placeholder="Nudget"><br>
+                        <input type="submit">
+                        <br>
+                    </form>
+                </div>
+                {{msg}}
+                <p class="small fw-bold mt-2 pt-1 mb-0"><a href="/logout" style="color: black">Log out</a></p>
+                {% else %}
+                You are not logged in.
+                <a href="/login">login</a>.
+                {%endif%}
             </div>
         </div>
     </div>
 </section>
-<h1>Dashboard</h1>
-{% if session.username %}
-Welcome {{ session.username }}
-Name : {{ account['USERNAME'] }}<br>
-Email : {{ account['EMAIL'] }}<br>
-<a href="/logout">logout</a>.
-{% else %}
-You are not logged in.
-<a href="/login">login</a>.
-{% endif %}
 {% endblock content %}
