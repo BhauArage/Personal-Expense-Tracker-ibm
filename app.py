@@ -1,6 +1,4 @@
-from multiprocessing.spawn import prepare
-from turtle import title
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import ibm_db
 import re
 
@@ -28,23 +26,23 @@ def home():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    global userid
     msg = " "
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        sql = "SELECT * FROM clients WHERE username =? AND password =?"
+        sql = "SELECT clients.*,budgets.MAXBUDGET FROM clients LEFT JOIN BUDGETS ON CLIENTs.ID=BUDGETS.ID WHERE username =? AND password =?"
         stmt = ibm_db.prepare(conn, sql)
         ibm_db.bind_param(stmt, 1, username)
         ibm_db.bind_param(stmt, 2, password)
         ibm_db.execute(stmt)
         account = ibm_db.fetch_assoc(stmt)
+        # print(account)
         if account:
             session["Loggedin"] = True
             session["id"] = account["ID"]
             session["email"] = account["EMAIL"]
-            userid = account["ID"]
             session["username"] = account["USERNAME"]
+            session["budget"] = account["MAXBUDGET"]
             return redirect("/dashboard")
         else:
             msg = "Incorrect login credentials"
@@ -86,18 +84,12 @@ def register():
 
 @app.route("/logout")
 def logout():
-    session.pop("Loggedin", None)
-    session.pop("id", None)
-    session.pop("username", None)
+    session.clear()
     return redirect("/")
 
 
 @app.route("/dashboard")
 def dashboard():
-    sql = "SELECT * FROM clients WHERE id =?"
-    stmt = ibm_db.prepare(conn, sql)
-    ibm_db.bind_param(stmt, 1, session["id"])
-    ibm_db.execute(stmt)
     return render_template("dashboard.html", title="Dashboard")
 
 
@@ -111,13 +103,14 @@ def changePassword():
             sql = "UPDATE CLIENTS SET password=? where id=?"
             stmt = ibm_db.prepare(conn, sql)
             ibm_db.bind_param(stmt, 1, pass1)
-            ibm_db.bind_param(stmt, 2, userid)
+            ibm_db.bind_param(stmt, 2, session["id"])
             if ibm_db.execute(stmt):
                 msg = "Successfully Changed Password!!!!"
 
         else:
             msg = "Passwords not equal"
-    return render_template("dashboard.html", msg=msg, title="DashBoard")
+    flash(msg)
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/changeBudget/", methods=["POST", "GET"])
@@ -125,35 +118,106 @@ def changeBudget():
     msg = "Enter the new budget"
     if request.method == "POST":
         budgetAmount = request.form["budgetAmount"]
-        sql = "UPDATE BUDGETS SET password=? where id=?"
+        sql = "UPDATE BUDGETS SET maxBudget=? where id=?"
         stmt = ibm_db.prepare(conn, sql)
         ibm_db.bind_param(stmt, 1, budgetAmount)
-        ibm_db.bind_param(stmt, 2, userid)
+        ibm_db.bind_param(stmt, 2, session["id"])
         if ibm_db.execute(stmt):
+            session["budget"] = budgetAmount
             msg = "Successfully Changed Budget!!!!"
         else:
             msg = "Budget not changed"
-    return render_template("dashboard.html", msg=msg, title="DashBoard")
+    flash(msg)
+    return redirect(url_for("dashboard"))
 
 
-@app.route("/addBudget")
+@app.route("/addBudget/", methods=["POST", "GET"])
 def addBudget():
-    pass
+    msg = "Enter the budget"
+    if request.method == "POST":
+        budgetAmount = request.form["budgetAmountToAdd"]
+        sql = "INSERT INTO BUDGETS(id,maxbudget) VALUES(?,?)"
+        stmt = ibm_db.prepare(conn, sql)
+        ibm_db.bind_param(stmt, 1, session["id"])
+        ibm_db.bind_param(stmt, 2, budgetAmount)
+        if ibm_db.execute(stmt):
+            session["budget"] = budgetAmount
+            msg = "Successfully Set The Budget!!!!"
+        else:
+            msg = "Budget not set yet"
+    flash(msg)
+    return redirect(url_for("dashboard"))
+
+
+def fetchall(stmt):
+    ibm_db.bind_param(stmt, 1, session["id"])
+    ibm_db.execute(stmt)
+    results = []
+    result_dict = ibm_db.fetch_assoc(stmt)
+    results.append(result_dict)
+    while result_dict is not False:
+        result_dict = ibm_db.fetch_assoc(stmt)
+        results.append(result_dict)
+    return results
 
 
 @app.route("/log_today")
 def logToday():
-    pass
+    sql = "SELECT AMOUNT,NEED,EDUCATION,ENTERTAINMENT,TRAVEL,FOOD,HEALTH,OTHERS FROM Expenses WHERE ID=?"
+    stmt = ibm_db.prepare(conn, sql)
+    expenseData = fetchall(stmt)
+    sql = "SELECT AMOUNT FROM income WHERE ID=?"
+    stmt = ibm_db.prepare(conn, sql)
+    incomeData = fetchall(stmt)
+    return render_template(
+        "sample.html",
+        title="Today's Log",
+        expenseData=expenseData,
+        incomeData=incomeData,
+    )
 
 
-@app.route("/addExpense/")
+@app.route("/addExpense/", methods=["POST", "GET"])
 def addExpense():
-    pass
+    msg = ""
+    if request.method == "POST":
+        amount = request.form["Amount"]
+        need = request.form["Need/Want"]
+        option = request.form.getlist("options")
+        sql = "INSERT INTO ExpenseS(ID,AMOUNT,NEED"
+        for o in option:
+            sql = sql + "," + o
+        sql = sql + ") VALUES(?,?,?" + (len(option) * ",TRUE") + ")"
+        stmt = ibm_db.prepare(conn, sql)
+        ibm_db.bind_param(stmt, 1, session["id"])
+        ibm_db.bind_param(stmt, 2, amount)
+        ibm_db.bind_param(stmt, 3, need)
+        if ibm_db.execute(stmt):
+            msg = "Successfully Added Expense!!!!"
+        else:
+            msg = "Expense not added"
+
+    flash(msg)
+    return redirect(url_for("logToday"))
 
 
-@app.route("/addIncome/")
+@app.route("/addIncome/", methods=["POST", "GET"])
 def addIncome():
-    pass
+    msg = ""
+    if request.method == "POST":
+        amount = request.form["AmountIncome"]
+        sql = "INSERT INTO INCOME(ID,AMOUNT) VALUES(?,?)"
+        stmt = ibm_db.prepare(conn, sql)
+        ibm_db.bind_param(stmt, 1, session["id"])
+        ibm_db.bind_param(stmt, 2, amount)
+        if ibm_db.execute(stmt):
+            msg = "Successfully Added Income!!!!"
+        else:
+            msg = "Income not added"
+
+    flash(msg)
+    return redirect(url_for("logToday"))
+    # return render_template("sample.html", title="Today's Log", msg=msg)
 
 
 # @app.route("/Edit")

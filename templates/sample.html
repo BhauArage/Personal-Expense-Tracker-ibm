@@ -1,63 +1,102 @@
 {% extends "layout.html" %}
 {% block content %}
-<script type="text/javascript">
-    var flagPass = true;
-    var flagBud = true;
-    function passwordChecked() {
-        let el = document.getElementById("passDiv");
-        el.style.display = flagPass ? "none" : "block";
-        flagPass = !flagPass;
-    }
-
-    function budgetChecked() {
-        let el = document.getElementById("budDiv");
-        el.style.display = flagBud ? "none" : "block";
-        flagBud = !flagBud;
-    }
-</script>
+<script src="{{url_for('static', filename='displaying.js')}}"></script>
 <section class="vh-100" style="background-color: #eee;">
     <div class="container h-100">
         <div class="card text-black" style="border-radius: 25px;">
             <div class="card-body p-md-5">
-                <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">DashBoard</p>
-                {% if session.username %}
-
-                <p class="text-center h3 fw-bold mb-5 mx-1 mx-md-4 mt-4">Welcome {{ session.username }}</p><br>
-
-                Name : {{ session['username'] }}<br>
-                Email : {{ session['email'] }}<br>
-
-                <button type="button" onclick="passwordChecked()">Change Password</button>
-                <button type="button" onclick="budgetChecked()">Change Budget</button>
-                <br>
-                <div id="passDiv" style="display:none;">
-                    <form method="post" id="passwordChangeForm" action="/changePassword/">
-                        <label for="pass1">Enter new password</label>
-                        <input name="pass1" type="password" value="{{request.form['pass1']}}"
-                            placeholder="Password"><br>
-                        <label for="pass2">Re-enter new password</label>
-                        <input name="pass2" type="password" value="{{request.form['pass2']}}"
-                            placeholder="Re-enter Password"><br>
-                        <input type="submit">
-                        <br>
-                    </form>
-                </div>
-                <br>
-                <div id="budDiv" style="display:none;">
-                    <form method="post" id="budgetChangeForm" action="/changeBudget/">
-                        <label for="budgetAmount">Enter new Budget</label>
-                        <input name="budgetAmount" type="number" value="{{request.form['budgetAmount']}}"
-                            placeholder="Nudget"><br>
-                        <input type="submit">
-                        <br>
-                    </form>
-                </div>
-                {{msg}}
-                <p class="small fw-bold mt-2 pt-1 mb-0"><a href="/logout" style="color: black">Log out</a></p>
-                {% else %}
-                You are not logged in.
-                <a href="/login">login</a>.
+                <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">Today's Logs</p>
+                <h3>Expenses</h3>
+                {%if expenseData%}
+                <table>
+                    <tr>
+                        <th>AMOUNT</th>
+                        <th>NEED</th>
+                        <th>EDUCATION</th>
+                        <th>ENTERTAINMENT</th>
+                        <th>TRAVEL</th>
+                        <th>FOOD</th>
+                        <th>HEALTH</th>
+                        <th>OTHERS</th>
+                    </tr>
+                    {%for item in expenseData[:-2]%}
+                    <tr>
+                        {%for i in item.keys()%}
+                        {%if i=='AMOUNT'%}
+                        <td>{{item[i]}}</td>
+                        {%else%}
+                        {%if item[i]%}
+                        <td style="color: green;">&#10003;</td>
+                        {%else%}
+                        <td style="color: red;">&#10007;</td>
+                        {%endif%}
+                        {%endif%}
+                        {%endfor%}
+                    </tr>
+                    {%endfor%}
+                </table>
+                {%else%}
+                <p>No Data yet</p>
                 {%endif%}
+                <br>
+                <!-- income table -->
+                <h3>Income</h3>
+                {%if incomeData%}
+                <table>
+                    <tr>
+                        <th>AMOUNT</th>
+                    </tr>
+                    {%for item in incomeData[:-2]%}
+                    <tr>
+                        <td>{{item['AMOUNT']}}</td>
+                    </tr>
+                    {%endfor%}
+                </table>
+                {%else%}
+                <p>No Data yet</p>
+                {%endif%}
+                <br>
+                <button type="button" onclick="displayingDiv('expenseDiv')">Add Expense</button>
+                <button type="button" onclick="displayingDiv('incomeDiv')">Add Income</button>
+
+                <div id="expenseDiv" style="display:none;">
+                    <form name="addexpenseForm" action="/addExpense/" method="post">
+                        <label for="Amount">Enter the Expense Amount</label>
+                        <input name="Amount" type="number" placeholder="Amount" step="0.01" min="0"><br>
+                        <br>
+                        <label for="Need/Want">Is it a need or a want?</label>
+                        <select name="Need/Want" required>
+                            <option value="TRUE">Need</option>
+                            <option value="FALSE">Want</option>
+                        </select><br>
+                        <br>
+                        <input type="checkbox" name="options" id="education" value="education"> Education </input>
+                        <input type="checkbox" name="options" id="entertainment" value="entertainment"> Entertainment
+                        </input>
+                        <input type="checkbox" name="options" id="travel" value="travel"> Travel </input>
+                        <input type="checkbox" name="options" id="food" value="food"> Food </input>
+                        <input type="checkbox" name="options" id="health" value="health"> Health </input>
+                        <input type="checkbox" name="options" id="others" value="others"> Others </input>
+                        <br><br>
+                        <input type="submit">
+                    </form>
+                </div>
+                <div id="incomeDiv" style="display:none;">
+                    <form method="post" id="incomeForm" action="/addIncome/" method="post">
+                        <label for="AmountIncome">Enter the Income Amount</label>
+                        <input name="AmountIncome" type="number" placeholder="Amount" step="0.01" min="0"><br>
+                        <br>
+                        <input type="submit">
+                        <br>
+                    </form>
+                </div>
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
             </div>
         </div>
     </div>
