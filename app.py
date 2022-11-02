@@ -1,6 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import (
+    Flask,
+    render_template,
+    send_file,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+)
 import ibm_db
 import re
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = "Zenik"
@@ -21,12 +34,12 @@ conn = ibm_db.connect(
 @app.route("/", methods=["POST", "GET"])
 @app.route("/home")
 def home():
-    return render_template("home.html", title="Home")
+    return render_template("home.html", title="Fin App")
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    msg = " "
+    msg = ""
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
@@ -46,13 +59,13 @@ def login():
             return redirect("/dashboard")
         else:
             msg = "Incorrect login credentials"
-
-    return render_template("login.html", title="Login", msg=msg)
+    flash(msg)
+    return render_template("login.html", title="Login")
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    msg = " "
+    msg = ""
     if request.method == "POST":
         username = request.form["username"]
         email = request.form["email"]
@@ -79,7 +92,8 @@ def register():
             ibm_db.bind_param(stmt, 3, password)
             ibm_db.execute(stmt)
             return redirect("/login")
-    return render_template("register.html", msg=msg, title="Register")
+    flash(msg)
+    return render_template("register.html", title="Register")
 
 
 @app.route("/logout")
@@ -158,6 +172,7 @@ def fetchall(stmt):
     while result_dict is not False:
         result_dict = ibm_db.fetch_assoc(stmt)
         results.append(result_dict)
+    results.pop()
     return results
 
 
@@ -166,11 +181,13 @@ def logToday():
     sql = "SELECT AMOUNT,NEED,EDUCATION,ENTERTAINMENT,TRAVEL,FOOD,HEALTH,OTHERS FROM Expenses WHERE ID=?"
     stmt = ibm_db.prepare(conn, sql)
     expenseData = fetchall(stmt)
+    # print(expenseData)
     sql = "SELECT AMOUNT FROM income WHERE ID=?"
     stmt = ibm_db.prepare(conn, sql)
     incomeData = fetchall(stmt)
+    # print(incomeData)
     return render_template(
-        "sample.html",
+        "logtoday.html",
         title="Today's Log",
         expenseData=expenseData,
         incomeData=incomeData,
@@ -217,11 +234,43 @@ def addIncome():
 
     flash(msg)
     return redirect(url_for("logToday"))
-    # return render_template("sample.html", title="Today's Log", msg=msg)
 
 
 # @app.route("/Edit")
 ###Visualization functions
+
+
+@app.route("/reports")
+def reports():
+    return render_template("sample.html", title="Reports")
+
+
+##simplify
+@app.route("/needVwant/")
+def needVwant():
+    count = []
+    sql = "SELECT COUNT(*) FROM Expenses WHERE id =? AND need = True"
+    stmt = ibm_db.prepare(conn, sql)
+    ibm_db.bind_param(stmt, 1, session["id"])
+    ibm_db.execute(stmt)
+    account = ibm_db.fetch_assoc(stmt)
+    count.append(account["1"])
+    sql = "SELECT COUNT(*) FROM Expenses WHERE id =? AND need = False"
+    stmt = ibm_db.prepare(conn, sql)
+    ibm_db.bind_param(stmt, 1, session["id"])
+    ibm_db.execute(stmt)
+    account = ibm_db.fetch_assoc(stmt)
+    count.append(account["1"])
+    print(count)
+    labels = ["Need", "Want"]
+    fig = plt.figure(figsize=(10, 7))
+    plt.pie(count, labels=labels)
+    plt.title("Need v. Want")
+    canvas = FigureCanvas(fig)
+    img = BytesIO()
+    fig.savefig(img)
+    img.seek(0)
+    return send_file(img, mimetype="image/png")
 
 
 if __name__ == "__main__":

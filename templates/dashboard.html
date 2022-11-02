@@ -1,71 +1,51 @@
-{% extends "layout.html" %}
+{% extends "navblock.html" %}
 {% block content %}
-<script src="{{url_for('static', filename='displaying.js')}}"></script>
-<section class="vh-100" style="background-color: #eee;">
-    <div class="container h-100">
-        <div class="card text-black" style="border-radius: 25px;">
-            <div class="card-body p-md-5">
-                <p class="text-center h1 fw-bold mb-5 mx-1 mx-md-4 mt-4">DashBoard</p>
-                {% if session.username %}
 
-                <p class="text-center h3 fw-bold mb-5 mx-1 mx-md-4 mt-4">Welcome {{ session.username }}</p><br>
+{% if session.username %}
+<p class="text-center h3 fw-bold mb-5 mx-1 mx-md-4 mt-4">Welcome {{ session.username }}</p><br>
 
-                Name : {{ session['username'] }}<br>
-                Email : {{ session['email'] }}<br>
-                Budget : {{ session['budget'] }}<br>
-
-                <button type="button" onclick="displayingDiv('passDiv')">Change Password</button>
-                {%if session.budget%}
-                <button type="button" onclick="displayingDiv('budDiv')">Change Budget</button>
-                {%else%}
-                <button type="button" onclick="displayingDiv('addbudDiv')">Add Budget</button>
-                {%endif%}
-
-                <br>
-                <div id="passDiv" style="display:none;">
-                    <form method="post" id="passwordChangeForm" action="/changePassword/" method="post">
-                        <label for="pass1">Enter new password</label>
-                        <input name="pass1" type="password" value="{{request.form['pass1']}}"
-                            placeholder="Password"><br>
-                        <label for="pass2">Re-enter new password</label>
-                        <input name="pass2" type="password" value="{{request.form['pass2']}}"
-                            placeholder="Re-enter Password"><br>
-                        <input type="submit">
-                        <br>
-                    </form>
-                </div>
-                <br>
-                <div id="budDiv" style="display:none;">
-                    <form method="post" id="budgetChangeForm" action="/changeBudget/" method="post">
-                        <label for="budgetAmount">Enter new Budget</label>
-                        <input name="budgetAmount" type="number" step="0.01" min="0" placeholder="Budget"><br>
-                        <input type="submit">
-                        <br>
-                    </form>
-                </div>
-                <div id="addbudDiv" style="display:none;">
-                    <form method="post" id="budgetAddForm" action="/addBudget/" method="post">
-                        <label for="budgetAmountToAdd">Enter the Budget</label>
-                        <input name="budgetAmountToAdd" step="0.01" min="0" type="number" placeholder="Budget"><br>
-                        <input type="submit">
-                        <br>
-                    </form>
-
-                </div>
-                {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                {% for message in messages %}
-                <p>{{ message }}</p>
-                {% endfor %}
-                {% endif %}
-                {% endwith %}
-                <p class="small fw-bold mt-2 pt-1 mb-0"><a href="/logout" style="color: black">Log out</a></p>
-                <p class="small fw-bold mt-2 pt-1 mb-0"><a href="/log_today" style="color: black">See today log</a></p>
-                {% else %}
-                You are not logged in.
-                <a href="/login">login</a>.
-                {%endif%}
-            </div>
-        </div>
-</section>
+Name : {{ session['username'] }}<br>
+Email : {{ session['email'] }}<br>
+Budget : {{ session['budget'] }}<br>
+<br>
+<button type="button" onclick="displayingDiv('passDiv')">Change Password</button>
+{%if session.budget%}
+<button type="button" onclick="displayingDiv('budDiv')">Change Budget</button>
+{%else%}
+<button type="button" onclick="displayingDiv('addbudDiv')">Add Budget</button>
+{%endif%}
+<br>
+<br>
+<div id="passDiv" style="display:none;">
+    <form method="post" id="passwordChangeForm" action="/changePassword/" method="post">
+        <label for="pass1">Enter new password</label>
+        <input name="pass1" type="password" value="{{request.form['pass1']}}" placeholder="Password"><br><br>
+        <label for="pass2">Re-enter new password</label>
+        <input name="pass2" type="password" value="{{request.form['pass2']}}" placeholder="Re-enter Password"><br><br>
+        <input type="submit">
+        <br>
+    </form>
+</div>
+<br>
+<div id="budDiv" style="display:none;">
+    <form method="post" id="budgetChangeForm" action="/changeBudget/" method="post">
+        <label for="budgetAmount">Enter new Budget</label>
+        <input name="budgetAmount" type="number" step="0.01" min="0" placeholder="Budget"><br>
+        <input type="submit">
+        <br>
+    </form>
+</div>
+<div id="addbudDiv" style="display:none;">
+    <form method="post" id="budgetAddForm" action="/addBudget/" method="post">
+        <label for="budgetAmountToAdd">Enter the Budget</label>
+        <input name="budgetAmountToAdd" step="0.01" min="0" type="number" placeholder="Budget"><br><br>
+        <input type="submit">
+        <br>
+    </form>
+</div>
+<br>
+{% else %}
+You are not logged in.
+<a href="/login">login</a>.
+{%endif%}
 {% endblock content %}

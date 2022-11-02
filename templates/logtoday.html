@@ -1,0 +1,92 @@
+{% extends "navblock.html" %}
+{% block content %}
+<h3>Expenses</h3>
+{%if expenseData%}
+<table>
+    <tr>
+        <th>AMOUNT</th>
+        <th>NEED</th>
+        <th>EDUCATION</th>
+        <th>ENTERTAINMENT</th>
+        <th>TRAVEL</th>
+        <th>FOOD</th>
+        <th>HEALTH</th>
+        <th>OTHERS</th>
+    </tr>
+    {%for item in expenseData%}
+    <tr>
+        {%for i in item.keys()%}
+        {%if i=='AMOUNT'%}
+        <td>{{item[i]}}</td>
+        {%else%}
+        {%if item[i]%}
+        <td style="color: green;">&#10003;</td>
+        {%else%}
+        <td style="color: red;">&#10007;</td>
+        {%endif%}
+        {%endif%}
+        {%endfor%}
+    </tr>
+    {%endfor%}
+</table>
+{%else%}
+<i>
+    <p>No Data yet</p>
+</i>
+{%endif%}
+<br>
+<!-- income table -->
+<h3>Income</h3>
+{%if incomeData%}
+<table>
+    <tr>
+        <th>AMOUNT</th>
+    </tr>
+    {%for item in incomeData%}
+    <tr>
+        <td>{{item['AMOUNT']}}</td>
+    </tr>
+    {%endfor%}
+</table>
+{%else%}
+<i>
+    <p>No Data yet</p>
+</i>
+{%endif%}
+<br>
+<button type="button" onclick="displayingDiv('expenseDiv')">Add Expense</button>
+<button type="button" onclick="displayingDiv('incomeDiv')">Add Income</button>
+<br>
+<br>
+<div id="expenseDiv" style="display:none;">
+    <form name="addexpenseForm" action="/addExpense/" method="post">
+        <label for="Amount">Enter the Expense Amount</label>
+        <input name="Amount" type="number" placeholder="Amount" step="0.01" min="0"><br>
+        <br>
+        <label for="Need/Want">Is it a need or a want?</label>
+        <select name="Need/Want" required>
+            <option value="TRUE">Need</option>
+            <option value="FALSE">Want</option>
+        </select><br>
+        <br>
+        <input type="checkbox" name="options" id="education" value="education"> Education </input>
+        <input type="checkbox" name="options" id="entertainment" value="entertainment"> Entertainment
+        </input>
+        <input type="checkbox" name="options" id="travel" value="travel"> Travel </input>
+        <input type="checkbox" name="options" id="food" value="food"> Food </input>
+        <input type="checkbox" name="options" id="health" value="health"> Health </input>
+        <input type="checkbox" name="options" id="others" value="others"> Others </input>
+        <br><br>
+        <input type="submit">
+    </form>
+</div>
+<div id="incomeDiv" style="display:none;">
+    <form method="post" id="incomeForm" action="/addIncome/" method="post">
+        <label for="AmountIncome">Enter the Income Amount</label>
+        <input name="AmountIncome" type="number" placeholder="Amount" step="0.01" min="0"><br>
+        <br>
+        <input type="submit">
+        <br>
+    </form>
+</div>
+{% endblock content %}
