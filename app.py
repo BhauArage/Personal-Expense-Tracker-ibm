@@ -178,14 +178,14 @@ def fetchall(stmt):
 
 @app.route("/log_today")
 def logToday():
-    sql = "SELECT AMOUNT,NEED,EDUCATION,ENTERTAINMENT,TRAVEL,FOOD,HEALTH,OTHERS FROM Expenses WHERE ID=?"
+    sql = "SELECT AMOUNT,CATEGORY,NEED FROM TRANSACTIONS WHERE USER_ID=? AND DATEADDED=CURRENT_DATE"
     stmt = ibm_db.prepare(conn, sql)
     expenseData = fetchall(stmt)
-    # print(expenseData)
-    sql = "SELECT AMOUNT FROM income WHERE ID=?"
+    print(expenseData)
+    sql = "SELECT AMOUNT FROM income WHERE ID=? AND DATEADDED=CURRENT_DATE"
     stmt = ibm_db.prepare(conn, sql)
     incomeData = fetchall(stmt)
-    # print(incomeData)
+    print(incomeData)
     return render_template(
         "logtoday.html",
         title="Today's Log",
@@ -200,15 +200,13 @@ def addExpense():
     if request.method == "POST":
         amount = request.form["Amount"]
         need = request.form["Need/Want"]
-        option = request.form.getlist("options")
-        sql = "INSERT INTO ExpenseS(ID,AMOUNT,NEED"
-        for o in option:
-            sql = sql + "," + o
-        sql = sql + ") VALUES(?,?,?" + (len(option) * ",TRUE") + ")"
+        category = request.form["category"]
+        sql = "INSERT INTO TRANSACTIONS(USER_ID,AMOUNT,NEED,CATEGORY,DATEADDED) VALUES(?,?,?,?,CURRENT_DATE)"
         stmt = ibm_db.prepare(conn, sql)
         ibm_db.bind_param(stmt, 1, session["id"])
         ibm_db.bind_param(stmt, 2, amount)
         ibm_db.bind_param(stmt, 3, need)
+        ibm_db.bind_param(stmt, 4, category)
         if ibm_db.execute(stmt):
             msg = "Successfully Added Expense!!!!"
         else:
@@ -223,7 +221,7 @@ def addIncome():
     msg = ""
     if request.method == "POST":
         amount = request.form["AmountIncome"]
-        sql = "INSERT INTO INCOME(ID,AMOUNT) VALUES(?,?)"
+        sql = "INSERT INTO INCOME(ID,AMOUNT,DATEADDED) VALUES(?,?,CURRENT_DATE)"
         stmt = ibm_db.prepare(conn, sql)
         ibm_db.bind_param(stmt, 1, session["id"])
         ibm_db.bind_param(stmt, 2, amount)
@@ -245,27 +243,73 @@ def reports():
     return render_template("sample.html", title="Reports")
 
 
-##simplify
 @app.route("/needVwant/")
 def needVwant():
-    count = []
-    sql = "SELECT COUNT(*) FROM Expenses WHERE id =? AND need = True"
+    sql = "SELECT Sum(amount) AS amount, need FROM transactions WHERE DAYS(CURRENT_DATE)-DAYS(DATEADDED)<29 AND  user_id = ? GROUP BY NEED ORDER BY need"
     stmt = ibm_db.prepare(conn, sql)
-    ibm_db.bind_param(stmt, 1, session["id"])
-    ibm_db.execute(stmt)
-    account = ibm_db.fetch_assoc(stmt)
-    count.append(account["1"])
-    sql = "SELECT COUNT(*) FROM Expenses WHERE id =? AND need = False"
-    stmt = ibm_db.prepare(conn, sql)
-    ibm_db.bind_param(stmt, 1, session["id"])
-    ibm_db.execute(stmt)
-    account = ibm_db.fetch_assoc(stmt)
-    count.append(account["1"])
-    print(count)
-    labels = ["Need", "Want"]
+    transactions = fetchall(stmt)
+    values = []
+    labels = []
+    print(transactions)
+    for transaction in transactions:
+        values.append(transaction["AMOUNT"])
+        labels.append(transaction["NEED"])
     fig = plt.figure(figsize=(10, 7))
-    plt.pie(count, labels=labels)
-    plt.title("Need v. Want")
+    plt.pie(values, labels=labels)
+    plt.title("Categories")
+    canvas = FigureCanvas(fig)
+    img = BytesIO()
+    fig.savefig(img)
+    img.seek(0)
+    return send_file(img, mimetype="image/png")
+
+
+@app.route("/categoriesChart/")
+def categoriesChart():
+    sql = "SELECT Sum(amount) AS amount, category FROM transactions WHERE DAYS(CURRENT_DATE)-DAYS(DATEADDED)<29 AND  user_id = ? GROUP BY category ORDER BY category"
+    stmt = ibm_db.prepare(conn, sql)
+    transactions = fetchall(stmt)
+    values = []
+    labels = []
+    print(transactions)
+    for transaction in transactions:
+        values.append(transaction["AMOUNT"])
+        labels.append(transaction["CATEGORY"])
+    fig = plt.figure(figsize=(10, 7))
+    plt.pie(values, labels=labels)
+    plt.title("Need v Want")
+    canvas = FigureCanvas(fig)
+    img = BytesIO()
+    fig.savefig(img)
+    img.seek(0)
+    return send_file(img, mimetype="image/png")
+
+
+##edit the legend... all visualizations workkkkkk!!!!!!!
+@app.route("/dailyLineChart/")
+def dailyLineChart():
+    sql = "SELECT Sum(amount) AS amount, DAY(dateadded) as dateadded FROM transactions WHERE DAYS(CURRENT_DATE)-DAYS(DATEADDED)<29 AND  user_id = ? GROUP BY dateadded ORDER BY dateadded"
+    stmt = ibm_db.prepare(conn, sql)
+    transactions = fetchall(stmt)
+    x = []
+    y = []
+    print(transactions)
+    for transaction in transactions:
+        y.append(transaction["AMOUNT"])
+        x.append(transaction["DATEADDED"])
+        ##get budget
+    sql = "SELECT MAXBUDGET FROM budgets WHERE id = ?"
+    stmt = ibm_db.prepare(conn, sql)
+    ibm_db.bind_param(stmt, 1, session["id"])
+    ibm_db.execute(stmt)
+    budget = ibm_db.fetch_assoc(stmt)
+    print(budget)
+    fig = plt.figure(figsize=(10, 7))
+    plt.plot(x, y, "-")
+    plt.axhline(y=budget["MAXBUDGET"], color="r", linestyle="-")
+    plt.xlabel("Day")
+    plt.ylabel("Transaction")
+    plt.title("Daily")
     canvas = FigureCanvas(fig)
     img = BytesIO()
     fig.savefig(img)
