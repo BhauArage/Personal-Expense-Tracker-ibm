@@ -15,7 +15,10 @@
         {%endfor%}
     </tr>
     {%endfor%}
-</table>
+</table><br>
+<div>
+    <h6>Total : {{expenseTotal}}</h6>
+</div>
 {%else%}
 <i>
     <p>No Data yet</p>
@@ -88,4 +91,5 @@
         <br>
     </form>
 </div>
+
 {% endblock content %}

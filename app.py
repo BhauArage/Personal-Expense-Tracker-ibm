@@ -176,12 +176,23 @@ def fetchall(stmt):
     return results
 
 
+def getTotal(table):
+    sql = "SELECT SUM(AMOUNT) FROM " + table + " where USER_ID=?"
+    stmt = ibm_db.prepare(conn, sql)
+    ibm_db.bind_param(stmt, 1, session["id"])
+    ibm_db.execute(stmt)
+    result = ibm_db.fetch_assoc(stmt)
+    print(result)
+    return result["1"]
+
+
 @app.route("/log_today")
 def logToday():
     sql = "SELECT AMOUNT,CATEGORY,NEED FROM TRANSACTIONS WHERE USER_ID=? AND DATEADDED=CURRENT_DATE"
     stmt = ibm_db.prepare(conn, sql)
     expenseData = fetchall(stmt)
     print(expenseData)
+    expenseTotal = getTotal("TRANSACTIONS")
     sql = "SELECT AMOUNT FROM income WHERE ID=? AND DATEADDED=CURRENT_DATE"
     stmt = ibm_db.prepare(conn, sql)
     incomeData = fetchall(stmt)
@@ -191,6 +202,7 @@ def logToday():
         title="Today's Log",
         expenseData=expenseData,
         incomeData=incomeData,
+        expenseTotal=expenseTotal,
     )
 
 
@@ -240,7 +252,7 @@ def addIncome():
 
 @app.route("/reports")
 def reports():
-    return render_template("sample.html", title="Reports")
+    return render_template("reports.html", title="Reports")
 
 
 @app.route("/needVwant/")
@@ -255,8 +267,9 @@ def needVwant():
         values.append(transaction["AMOUNT"])
         labels.append(transaction["NEED"])
     fig = plt.figure(figsize=(10, 7))
-    plt.pie(values, labels=labels)
-    plt.title("Categories")
+    plt.pie(values)
+    plt.title("Need v Want")
+    plt.legend(["WANT", "NEED"])
     canvas = FigureCanvas(fig)
     img = BytesIO()
     fig.savefig(img)
@@ -277,7 +290,8 @@ def categoriesChart():
         labels.append(transaction["CATEGORY"])
     fig = plt.figure(figsize=(10, 7))
     plt.pie(values, labels=labels)
-    plt.title("Need v Want")
+    plt.title("Categories")
+    plt.legend()
     canvas = FigureCanvas(fig)
     img = BytesIO()
     fig.savefig(img)
@@ -305,11 +319,14 @@ def dailyLineChart():
     budget = ibm_db.fetch_assoc(stmt)
     print(budget)
     fig = plt.figure(figsize=(10, 7))
+    plt.scatter(x, y)
     plt.plot(x, y, "-")
-    plt.axhline(y=budget["MAXBUDGET"], color="r", linestyle="-")
+    if budget:
+        plt.axhline(y=budget["MAXBUDGET"], color="r", linestyle="-")
     plt.xlabel("Day")
     plt.ylabel("Transaction")
     plt.title("Daily")
+    plt.legend()
     canvas = FigureCanvas(fig)
     img = BytesIO()
     fig.savefig(img)
