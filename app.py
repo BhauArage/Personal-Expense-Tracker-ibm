@@ -56,6 +56,7 @@ def login():
             session["email"] = account["EMAIL"]
             session["username"] = account["USERNAME"]
             session["budget"] = account["MAXBUDGET"]
+            print(session["Loggedin"])
             return redirect("/dashboard")
         else:
             msg = "Incorrect login credentials"
@@ -91,7 +92,7 @@ def register():
             ibm_db.bind_param(stmt, 2, username)
             ibm_db.bind_param(stmt, 3, password)
             ibm_db.execute(stmt)
-            return redirect("/login")
+            return redirect("/dashboard")
     flash(msg)
     return render_template("register.html", title="Register")
 
@@ -102,9 +103,17 @@ def logout():
     return redirect("/")
 
 
+def isLogged():
+    return session["Loggedin"]
+
+
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html", title="Dashboard")
+    if isLogged:
+        return render_template("dashboard.html", title="Dashboard")
+    else:
+        flash("Login to go to dashboard")
+        return redirect("/login")
 
 
 @app.route("/changePassword/", methods=["POST", "GET"])
@@ -188,22 +197,26 @@ def getTotal(table):
 
 @app.route("/log_today")
 def logToday():
-    sql = "SELECT AMOUNT,CATEGORY,NEED FROM TRANSACTIONS WHERE USER_ID=? AND DATEADDED=CURRENT_DATE"
-    stmt = ibm_db.prepare(conn, sql)
-    expenseData = fetchall(stmt)
-    print(expenseData)
-    expenseTotal = getTotal("TRANSACTIONS")
-    sql = "SELECT AMOUNT FROM income WHERE ID=? AND DATEADDED=CURRENT_DATE"
-    stmt = ibm_db.prepare(conn, sql)
-    incomeData = fetchall(stmt)
-    print(incomeData)
-    return render_template(
-        "logtoday.html",
-        title="Today's Log",
-        expenseData=expenseData,
-        incomeData=incomeData,
-        expenseTotal=expenseTotal,
-    )
+    if isLogged():
+        sql = "SELECT AMOUNT,CATEGORY,NEED FROM TRANSACTIONS WHERE USER_ID=? AND DATEADDED=CURRENT_DATE"
+        stmt = ibm_db.prepare(conn, sql)
+        expenseData = fetchall(stmt)
+        print(expenseData)
+        expenseTotal = getTotal("TRANSACTIONS")
+        sql = "SELECT AMOUNT FROM income WHERE ID=? AND DATEADDED=CURRENT_DATE"
+        stmt = ibm_db.prepare(conn, sql)
+        incomeData = fetchall(stmt)
+        print(incomeData)
+        return render_template(
+            "logtoday.html",
+            title="Today's Log",
+            expenseData=expenseData,
+            incomeData=incomeData,
+            expenseTotal=expenseTotal,
+        )
+    else:
+        flash("Login First")
+        return redirect("/login")
 
 
 @app.route("/addExpense/", methods=["POST", "GET"])
