@@ -23,7 +23,7 @@ conn = ibm_db.connect(
     "HOSTNAME=6667d8e9-9d4d-4ccb-ba32-21da3bb5aafc.c1ogj3sd0tgtu0lqde00.databases.appdomain.cloud;"
     "PORT=30376;"
     "SECURITY=SSL;"
-    "SSLServerCertificate=C:/Users/bhaua/OneDrive/Desktop/SEM Stuff KCT/IBM/DigiCertGlobalRootCA.crt;"
+    "SSLServerCertificate=DigiCertGlobalRootCA.crt;"
     "UID=bcv24102;"
     "PWD=ilZgx2Zokf2nJOCW;",
     "",
@@ -34,7 +34,7 @@ conn = ibm_db.connect(
 @app.route("/", methods=["POST", "GET"])
 @app.route("/home")
 def home():
-    return render_template("home.html", title="Fin App")
+    return render_template("home.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
